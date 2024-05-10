@@ -8,13 +8,13 @@ from importlib import import_module
 def thread_generator(thread_args):
     ix, generator, rollout_per_thread = thread_args
 
-    thread_dir = join('datasets', generator, 'thread_{ix}')
+    thread_dir = join('datasets', generator, f"thread_{ix}")
     makedirs(thread_dir, exist_ok=True)
 
-    generator_path = join('generators', generator)
+    generator_path = join('generators', generator + '.py')
     assert exists(generator_path), 'The generator does not exists...'
 
-    g = import_module('generators.{generator}')
+    g = import_module(f"generators.{generator}")
     g.generate_dataset(rollout_per_thread, thread_dir)
 
     print(f"Generated Dir: {thread_dir}, Rollouts: {rollout_per_thread}")

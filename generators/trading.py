@@ -15,7 +15,7 @@ def generate_dataset(rollout_per_thread, thread_dir):
         done_rollout    = []
 
         while True:
-            action = np.random.randint(env.action_space)[0]
+            action = np.random.randint(env.action_space)
 
             state, reward, done, _, _ = env.step(action)
 

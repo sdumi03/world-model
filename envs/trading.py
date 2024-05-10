@@ -63,6 +63,8 @@ class Env:
         self.seq_len = 30
         self.pred_len = 5
 
+        self.action_space = 2
+
 
     def render(self):
         print()
