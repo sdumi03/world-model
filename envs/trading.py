@@ -83,6 +83,8 @@ class Env:
         down = self.next_state[self.next_state.close <= self.next_state.open]
 
         plt.figure()
+        plt.axis('off')
+        plt.gca().set_position((0, 0, 1, 1))
 
         #plot up prices
         plt.bar(up.index,
@@ -125,11 +127,9 @@ class Env:
         )
 
         # display candlestick chart
-        plt.axis('off')
         # plt.show()
 
         # get the figure
-        plt.tight_layout()
         fig = plt.gcf()
 
         # figure to image
