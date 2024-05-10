@@ -35,7 +35,7 @@ def test(model, dataset_test, test_loader, device):
     return test_loss
 
 
-def train(epoch, model, dataset_train, train_loader, optimizer, device):
+def train(model, dataset_train, train_loader, optimizer, device):
     model.train()
     dataset_train.load_next_buffer()
     train_loss = 0
@@ -52,13 +52,13 @@ def train(epoch, model, dataset_train, train_loader, optimizer, device):
 
         if batch_idx % 20 == 0:
             print(
-                f"Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} ({100. * batch_idx / len(train_loader):.0f}%)]"
+                f"[{batch_idx * len(data)}/{len(train_loader.dataset)} ({100. * batch_idx / len(train_loader):.0f}%)]"
             )
             print(
                 f"Loss: {loss.item() / len(data):.6f}"
             )
 
-    print(f"====> Epoch: {epoch} Average loss: {train_loss / len(train_loader.dataset):.4f}")
+    print(f"====> Average loss: {train_loss / len(train_loader.dataset):.4f}")
 
 
 def main(args):
@@ -126,7 +126,7 @@ def main(args):
         print()
 
         # Training
-        train(epoch, model, dataset_train, train_loader, optimizer, device)
+        train(model, dataset_train, train_loader, optimizer, device)
         test_loss = test(model, dataset_test, test_loader, device)
         scheduler.step(test_loss)
         earlystopping.step(test_loss)
@@ -148,10 +148,11 @@ def main(args):
             with torch.no_grad():
                 sample = torch.randn(misc.RED_SIZE, misc.LATENT_SIZE).to(device)
                 sample = model.decoder(sample).cpu()
-                save_image(
-                    sample.view(64, 3, misc.RED_SIZE, misc.RED_SIZE),
-                    join(vae_dir, 'samples', f"sample_{epoch}.png")
-                )
+                for i in range(len(sample)):
+                    save_image(
+                        sample[i].view(3, misc.RED_SIZE, misc.RED_SIZE),
+                        join(vae_dir, 'samples', f"sample_{epoch}_{i}.png")
+                    )
 
         if earlystopping.stop:
             print(f"End of Training because of early stopping at epoch {epoch}")
