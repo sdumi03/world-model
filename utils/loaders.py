@@ -6,8 +6,8 @@ import torch
 import numpy as np
 
 
-class _RolloutDataset(torch.utils.data.Dataset): # pylint: disable=too-few-public-methods
-    def __init__(self, root, transform, buffer_size=200, train=True): # pylint: disable=too-many-arguments
+class _RolloutDataset(torch.utils.data.Dataset):
+    def __init__(self, root, transform, buffer_size=200, train=True):
         self._transform = transform
 
         self._files = [
@@ -49,13 +49,9 @@ class _RolloutDataset(torch.utils.data.Dataset): # pylint: disable=too-few-publi
                     self._cum_size[-1] +
                     self._data_per_sequence(data['rewards'].shape[0])
                 ]
-
             pbar.update(1)
-
         pbar.close()
 
-        ### print('_buffer', len(self._buffer))
-        ### print('_cum_size', len(self._cum_size))
 
     def __len__(self):
         # to have a full sequence, you need self.seq_len + 1 elements, as
@@ -79,7 +75,7 @@ class _RolloutDataset(torch.utils.data.Dataset): # pylint: disable=too-few-publi
         pass
 
 
-class RolloutSequenceDataset(_RolloutDataset): # pylint: disable=too-few-public-methods
+class RolloutSequenceDataset(_RolloutDataset):
     """ Encapsulates rollouts.
 
     Rollouts should be stored in subdirs of the root directory, in the form of npz files,
@@ -120,18 +116,13 @@ class RolloutSequenceDataset(_RolloutDataset): # pylint: disable=too-few-public-
         action = action.astype(np.float32)
         reward, terminal = [data[key][seq_index + 1 : seq_index + self._seq_len + 1].astype(np.float32)
                             for key in ('rewards', 'terminals')]
-        # data is given in the form
-        # (obs, action, reward, terminal, next_obs)
         return obs, action, reward, terminal, next_obs
 
     def _data_per_sequence(self, data_length):
-        ### print('_data_per_sequence')
-        ### print('data_length', data_length)
-        ### print('_seq_len', self._seq_len)
         return data_length - self._seq_len
 
 
-class RolloutObservationDataset(_RolloutDataset): # pylint: disable=too-few-public-methods
+class RolloutObservationDataset(_RolloutDataset):
     """ Encapsulates rollouts.
 
     Rollouts should be stored in subdirs of the root directory, in the form of npz files,

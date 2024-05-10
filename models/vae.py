@@ -21,6 +21,7 @@ class Decoder(torch.nn.Module):
         reconstruction = torch.nn.functional.sigmoid(self.deconv4(x))
         return reconstruction
 
+
 class Encoder(torch.nn.Module):
     def __init__(self, img_channels, latent_size):
         super(Encoder, self).__init__()
@@ -47,7 +48,8 @@ class Encoder(torch.nn.Module):
 
         return mu, logsigma
 
-class VAE(torch.nn.Module):
+
+class MODEL(torch.nn.Module):
     def __init__(self, img_channels, latent_size):
         super(VAE, self).__init__()
         self.encoder = Encoder(img_channels, latent_size)

@@ -4,17 +4,9 @@ import torch
 from torchvision import transforms
 from torchvision.utils import save_image
 
-from models import vae # vae.MODEL
-
-# from utils.misc import save_checkpoint
-# from utils.misc import LSIZE, RED_SIZE
+from models import vae
 from utils import misc
-
-# from utils.learning import EarlyStopping
-# from utils.learning import ReduceLROnPlateau
 from utils import learning
-
-# from utils.loaders import RolloutObservationDataset
 from utils import loaders
 
 from os import makedirs
@@ -43,7 +35,7 @@ def test(model, dataset_test, test_loader):
     return test_loss
 
 
-def train(epoch, model, dataset_train, optimizer):
+def train(epoch, model, dataset_train, train_loader, optimizer):
     model.train()
     dataset_train.load_next_buffer()
     train_loss = 0
@@ -134,8 +126,8 @@ def main(args):
         print()
 
         # Training
-        train(epoch)
-        test_loss = test()
+        train(epoch, model, dataset_train, train_loader, optimizer)
+        test_loss = test(model, dataset_test, test_loader)
         scheduler.step(test_loss)
         earlystopping.step(test_loss)
 
