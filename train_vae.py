@@ -105,7 +105,7 @@ def main(args):
         dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=2
     )
 
-    model = vae.MODEL(3, misc.LATENT_SIZE).to(device)
+    model = vae.MODEL(misc.IMAGE_CHANNELS, misc.LATENT_SIZE).to(device)
     optimizer = torch.optim.Adam(model.parameters())
     scheduler = ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
     earlystopping = EarlyStopping('min', patience=30)
@@ -143,15 +143,14 @@ def main(args):
         if not current_best or test_loss < current_best:
             current_best = test_loss
 
-        misc.save_checkpoint({
-            'epoch': epoch,
-            'state_dict': model.state_dict(),
-            'precision': test_loss,
-            'optimizer': optimizer.state_dict(),
-            'scheduler': scheduler.state_dict(),
-            'earlystopping': earlystopping.state_dict()
-        }, is_best, best_filename)
-
+            torch.save({
+                'epoch': epoch,
+                'state_dict': model.state_dict(),
+                'precision': test_loss,
+                'optimizer': optimizer.state_dict(),
+                'scheduler': scheduler.state_dict(),
+                'earlystopping': earlystopping.state_dict()
+            }, best_filename)
         
         if not args.nosamples and epoch in samples_every:
             with torch.no_grad():
@@ -159,7 +158,7 @@ def main(args):
                 sample = model.decoder(sample).cpu()
                 save_image(
                     sample.view(64, 3, RED_SIZE, RED_SIZE),
-                    join(vae_dir, 'sample', f"sample_{epoch}.png")
+                    join(vae_dir, 'samples', f"sample_{epoch}.png")
                 )
 
         if earlystopping.stop:
@@ -178,9 +177,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '--epochs', type=int, default=1000, help='Number of epochs to train'
     )
-    parser.add_argument(
-        '--logdir', type=str, help='Directory where results are logged'
-    )
+    # parser.add_argument(
+    #     '--logdir', type=str, help='Directory where results are logged'
+    # )
     parser.add_argument(
         '--noreload', action='store_true', help='Best model is not reloaded if specified'
     )
