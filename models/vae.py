@@ -2,7 +2,7 @@ import torch
 
 class Decoder(torch.nn.Module):
     def __init__(self, img_channels, latent_size):
-        super(Decoder, self).__init__()
+        super().__init__()
         self.latent_size = latent_size
         self.img_channels = img_channels
 
@@ -24,7 +24,7 @@ class Decoder(torch.nn.Module):
 
 class Encoder(torch.nn.Module):
     def __init__(self, img_channels, latent_size):
-        super(Encoder, self).__init__()
+        super().__init__()
         self.latent_size = latent_size
         self.img_channels = img_channels
 
@@ -51,7 +51,7 @@ class Encoder(torch.nn.Module):
 
 class MODEL(torch.nn.Module):
     def __init__(self, img_channels, latent_size):
-        super(VAE, self).__init__()
+        super().__init__()
         self.encoder = Encoder(img_channels, latent_size)
         self.decoder = Decoder(img_channels, latent_size)
 

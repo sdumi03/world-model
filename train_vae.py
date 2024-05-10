@@ -19,7 +19,7 @@ def vae_loss_function(recon_x, x, mu, logsigma):
     return BCE + KLD
 
 
-def test(model, dataset_test, test_loader):
+def test(model, dataset_test, test_loader, device):
     model.eval()
     dataset_test.load_next_buffer()
     test_loss = 0
@@ -35,7 +35,7 @@ def test(model, dataset_test, test_loader):
     return test_loss
 
 
-def train(epoch, model, dataset_train, train_loader, optimizer):
+def train(epoch, model, dataset_train, train_loader, optimizer, device):
     model.train()
     dataset_train.load_next_buffer()
     train_loss = 0
@@ -99,8 +99,8 @@ def main(args):
 
     model = vae.MODEL(misc.IMAGE_CHANNELS, misc.LATENT_SIZE).to(device)
     optimizer = torch.optim.Adam(model.parameters())
-    scheduler = ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
-    earlystopping = EarlyStopping('min', patience=30)
+    scheduler = learning.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
+    earlystopping = learning.EarlyStopping('min', patience=30)
 
     vae_dir = join('trained', args.generator, 'vae')
     makedirs(vae_dir, exist_ok=True)
@@ -126,8 +126,8 @@ def main(args):
         print()
 
         # Training
-        train(epoch, model, dataset_train, train_loader, optimizer)
-        test_loss = test(model, dataset_test, test_loader)
+        train(epoch, model, dataset_train, train_loader, optimizer, device)
+        test_loss = test(model, dataset_test, test_loader, device)
         scheduler.step(test_loss)
         earlystopping.step(test_loss)
 
@@ -143,13 +143,13 @@ def main(args):
                 'scheduler': scheduler.state_dict(),
                 'earlystopping': earlystopping.state_dict()
             }, best_filename)
-        
+
         if not args.nosamples and epoch in samples_every:
             with torch.no_grad():
-                sample = torch.randn(RED_SIZE, LSIZE).to(device)
+                sample = torch.randn(misc.RED_SIZE, misc.LATENT_SIZE).to(device)
                 sample = model.decoder(sample).cpu()
                 save_image(
-                    sample.view(64, 3, RED_SIZE, RED_SIZE),
+                    sample.view(64, 3, misc.RED_SIZE, misc.RED_SIZE),
                     join(vae_dir, 'samples', f"sample_{epoch}.png")
                 )
 

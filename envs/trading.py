@@ -53,8 +53,8 @@ class Env:
         ]
 
         # define width of candlestick elements
-        self.width_candle = .4
-        self.width_candle_minmax = .04
+        self.width_candle = 1.0
+        self.width_candle_minmax = .25
 
         # define colors to use
         self.color_up = 'green'
@@ -79,8 +79,8 @@ class Env:
         self.next_state = self.next_state.reset_index(drop=True)
 
         # define up and down prices
-        up = self.next_state[self.next_state.close >= self.next_state.open]
-        down = self.next_state[self.next_state.close < self.next_state.open]
+        up = self.next_state[self.next_state.close > self.next_state.open]
+        down = self.next_state[self.next_state.close <= self.next_state.open]
 
         plt.figure()
 
@@ -129,6 +129,7 @@ class Env:
         # plt.show()
 
         # get the figure
+        plt.tight_layout()
         fig = plt.gcf()
 
         # figure to image
