@@ -19,9 +19,9 @@ def vae_loss_function(recon_x, x, mu, logsigma):
     return BCE + KLD
 
 
-def test(model, dataset_test, test_loader, device):
+def test(model, test_loader, device):
     model.eval()
-    dataset_test.load_next_buffer()
+    test_loader.dataset.load_next_buffer()
     test_loss = 0
 
     with torch.no_grad():
@@ -35,9 +35,9 @@ def test(model, dataset_test, test_loader, device):
     return test_loss
 
 
-def train(model, dataset_train, train_loader, optimizer, device):
+def train(model, train_loader, optimizer, device):
     model.train()
-    dataset_train.load_next_buffer()
+    train_loader.dataset.load_next_buffer()
     train_loss = 0
 
     for data in train_loader:
@@ -118,8 +118,8 @@ def main(args):
         print()
 
         # Training
-        train(model, dataset_train, train_loader, optimizer, device)
-        test_loss = test(model, dataset_test, test_loader, device)
+        train(model, train_loader, optimizer, device)
+        test_loss = test(model, test_loader, device)
         scheduler.step(test_loss)
         earlystopping.step(test_loss)
 
