@@ -98,10 +98,10 @@ def main(args):
     makedirs(vae_dir, exist_ok=True)
     makedirs(join(vae_dir, 'samples'), exist_ok=True)
 
-    best_filename = join(vae_dir, 'best.tar')
+    best_file = join(vae_dir, 'best.tar')
 
-    if not args.noreload and exists(best_filename):
-        state = torch.load(best_filename)
+    if not args.noreload and exists(best_file):
+        state = torch.load(best_file)
         print(
             f"Reloading model at epoch {state['epoch']}, with test error {state['precision']}"
         )
@@ -134,7 +134,7 @@ def main(args):
                 'optimizer': optimizer.state_dict(),
                 'scheduler': scheduler.state_dict(),
                 'earlystopping': earlystopping.state_dict()
-            }, best_filename)
+            }, best_file)
 
         if not args.nosamples and epoch in samples_every:
             with torch.no_grad():
