@@ -55,7 +55,7 @@ class _MDRNNBase(torch.nn.Module):
         pass
 
 
-class MDRNN(_MDRNNBase):
+class MODEL(_MDRNNBase):
     """ MDRNN model for multi steps forward """
     def __init__(self, latents, actions, hiddens, gaussians):
         super().__init__(latents, actions, hiddens, gaussians)
