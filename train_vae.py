@@ -31,7 +31,7 @@ def test(model, dataset_test, test_loader, device):
             test_loss += vae_loss_function(recon_batch, data, mu, logvar).item()
 
     test_loss /= len(test_loader.dataset)
-    print(f"====> Test set loss: {test_loss:.4f}")
+    print(f"===> Average test loss: {test_loss:.4f}")
     return test_loss
 
 
@@ -40,7 +40,7 @@ def train(model, dataset_train, train_loader, optimizer, device):
     dataset_train.load_next_buffer()
     train_loss = 0
 
-    for batch_idx, data in enumerate(train_loader):
+    for data in train_loader:
         data = data.to(device)
 
         optimizer.zero_grad()
@@ -50,15 +50,7 @@ def train(model, dataset_train, train_loader, optimizer, device):
         train_loss += loss.item()
         optimizer.step()
 
-        if batch_idx % 20 == 0:
-            print(
-                f"[{batch_idx * len(data)}/{len(train_loader.dataset)} ({100. * batch_idx / len(train_loader):.0f}%)]"
-            )
-            print(
-                f"Loss: {loss.item() / len(data):.6f}"
-            )
-
-    print(f"====> Average loss: {train_loss / len(train_loader.dataset):.4f}")
+    print(f"===> Average train loss: {train_loss / len(train_loader.dataset):.4f}")
 
 
 def main(args):
@@ -80,8 +72,8 @@ def main(args):
         transforms.ToTensor()
     ])
 
-    rollouts_path = join('datasets', args.generator)
-    assert exists(rollouts_path), 'Rollouts does not exists...'
+    rollouts_path = join('datasets', args.env)
+    assert exists(rollouts_path), 'Rollouts does not exists'
 
     dataset_train = loaders.RolloutObservationDataset(
         rollouts_path, transform_train, train=True
@@ -102,7 +94,7 @@ def main(args):
     scheduler = learning.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
     earlystopping = learning.EarlyStopping('min', patience=30)
 
-    vae_dir = join('trained', args.generator, 'vae')
+    vae_dir = join('trained', args.env, 'vae')
     makedirs(vae_dir, exist_ok=True)
     makedirs(join(vae_dir, 'samples'), exist_ok=True)
 
@@ -150,7 +142,7 @@ def main(args):
                 sample = model.decoder(sample).cpu()
                 for i in range(len(sample)):
                     save_image(
-                        sample[i].view(3, misc.RED_SIZE, misc.RED_SIZE),
+                        sample[i].view(misc.IMAGE_CHANNELS, misc.RED_SIZE, misc.RED_SIZE),
                         join(vae_dir, 'samples', f"sample_{epoch}_{i}.png")
                     )
 
@@ -162,17 +154,14 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--generator', type=str, help='Generator of rollouts'
+        '--env', type=str, help='Enviroment for training'
     )
     parser.add_argument(
         '--batch-size', type=int, default=32, help='Batch size for training'
     )
     parser.add_argument(
-        '--epochs', type=int, default=1000, help='Number of epochs to train'
+        '--epochs', type=int, default=1000, help='Number of epochs for training'
     )
-    # parser.add_argument(
-    #     '--logdir', type=str, help='Directory where results are logged'
-    # )
     parser.add_argument(
         '--noreload', action='store_true', help='Best model is not reloaded if specified'
     )

@@ -6,27 +6,25 @@ from importlib import import_module
 
 
 def thread_generator(thread_args):
-    ix, generator, rollout_per_thread = thread_args
-
-    thread_dir = join('datasets', generator, f"thread_{ix}")
+    thread_dir = join('datasets', thread_args.env, f"thread_{thread_args.ix}")
     makedirs(thread_dir, exist_ok=True)
 
-    generator_path = join('generators', generator + '.py')
-    assert exists(generator_path), 'The generator does not exists...'
+    generator_path = join('generators', thread_args.env + '.py')
+    assert exists(generator_path), 'The generator of rollouts does not exists'
 
-    g = import_module(f"generators.{generator}")
-    g.generate_dataset(rollout_per_thread, thread_dir)
+    g = import_module(f"generators.{thread_args.env}")
+    g.generate_dataset(thread_args.rollout_per_thread, thread_dir)
 
-    print(f"Generated Dir: {thread_dir}, Rollouts: {rollout_per_thread}")
+    print(f"Generated Dir: {thread_dir}, Rollouts: {thread_args.rollout_per_thread}")
 
     return True
 
 
 def main(args):
     rollout_per_thread = args.rollouts // args.threads
-    assert rollout_per_thread > 0, 'The number of rollouts should be > 0'
+    assert rollout_per_thread > 0, 'The number of rollouts per thread should be > 0'
 
-    thread_args = [(ix, args.generator, rollout_per_thread) 
+    thread_args = [(ix, args.env, rollout_per_thread)
                    for ix in range(args.threads)]
 
     with Pool(args.threads) as thread:
@@ -35,9 +33,15 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--rollouts', type=int, help='Number of rollouts')
-    parser.add_argument('--threads', type=int, help='Number of threads')
-    parser.add_argument('--generator', type=str, help='Generator of rollouts')
+    parser.add_argument(
+        '--env', type=str, help='Enviroment for training'
+    )
+    parser.add_argument(
+        '--rollouts', type=int, help='Number of rollouts'
+    )
+    parser.add_argument(
+        '--threads', type=int, help='Number of threads'
+    )
     args = parser.parse_args()
 
     main(args)
