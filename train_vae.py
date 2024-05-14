@@ -1,16 +1,13 @@
 import argparse
-
 import torch
 from torchvision import transforms
 from torchvision.utils import save_image
 
-from models import vae
-from utils import misc
-from utils import learning
-from utils import loaders
-
 from os import makedirs
 from os.path import join, exists
+
+from models import vae
+from utils import misc, learning, loaders
 
 
 def vae_loss_function(recon_x, x, mu, logsigma):
