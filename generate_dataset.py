@@ -6,16 +6,18 @@ from importlib import import_module
 
 
 def thread_generator(thread_args):
-    thread_dir = join('datasets', thread_args.env, f"thread_{thread_args.ix}")
+    ix, env, rollout_per_thread = thread_args
+
+    thread_dir = join('datasets', env, f"thread_{ix}")
     makedirs(thread_dir, exist_ok=True)
 
-    generator_path = join('generators', thread_args.env + '.py')
+    generator_path = join('generators', env + '.py')
     assert exists(generator_path), 'The generator of rollouts does not exists'
 
-    g = import_module(f"generators.{thread_args.env}")
-    g.generate_dataset(thread_args.rollout_per_thread, thread_dir)
+    g = import_module(f"generators.{env}")
+    g.generate_dataset(rollout_per_thread, thread_dir)
 
-    print(f"Generated Dir: {thread_dir}, Rollouts: {thread_args.rollout_per_thread}")
+    print(f"Generated Dir: {thread_dir}, Rollouts: {rollout_per_thread}")
 
     return True
 
