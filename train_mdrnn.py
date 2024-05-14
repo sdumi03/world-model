@@ -10,7 +10,7 @@ from models import vae, mdrnn
 from utils import misc, learning, loaders
 
 
-def to_latent(state, next_state):
+def to_latent(vae_model, state, next_state):
     """ Transform observations to latent space.
 
     :args state: 5D torch tensor (BSIZE, SEQ_LEN, ASIZE, SIZE, SIZE)
@@ -33,7 +33,7 @@ def to_latent(state, next_state):
         ]
 
         (state_mu, state_logsigma), (next_state_mu, next_state_logsigma) = [
-            vae(x)[1:]
+            vae_model(x)[1:]
             for x in (state, next_state)
         ]
 
@@ -51,7 +51,7 @@ def to_latent(state, next_state):
     return latent_state, latent_next_state
 
 
-def get_loss(latent_state, action, reward, done, latent_next_state, include_reward: bool):
+def get_loss(mdrnn_model, latent_state, action, reward, done, latent_next_state, include_reward: bool):
     """ Compute losses.
 
     The loss that is computed is:
@@ -75,7 +75,7 @@ def get_loss(latent_state, action, reward, done, latent_next_state, include_rewa
             for arr in [latent_state, action, reward, done, latent_next_state]
         ]
 
-    mus, sigmas, logpi, rewards, dones = mdrnn(action, latent_state)
+    mus, sigmas, logpi, rewards, dones = mdrnn_model(action, latent_state)
     gmm = mdrnn.gmm_loss(latent_next_state, mus, sigmas, logpi)
     bce = torch.nn.functional.binary_cross_entropy_with_logits(dones, done)
 
@@ -90,8 +90,8 @@ def get_loss(latent_state, action, reward, done, latent_next_state, include_rewa
     return dict(gmm=gmm, bce=bce, mse=mse, loss=loss)
 
 
-def test(mdrnn, test_loader, device, batch_size, include_reward=False):
-    mdrnn.eval()
+def test(mdrnn_model, vae_model, test_loader, device, batch_size, include_reward=False):
+    mdrnn_model.eval()
     test_loader.dataset.load_next_buffer()
     cum_loss = 0
     cum_gmm = 0
@@ -101,11 +101,13 @@ def test(mdrnn, test_loader, device, batch_size, include_reward=False):
     for ix, data in enumerate(test_loader):
         state, action, reward, done, next_state = [arr.to(device) for arr in data]
 
-        latent_state, latent_next_state = to_latent(state, next_state)
+        latent_state, latent_next_state = to_latent(vae_model, state, next_state)
 
         with torch.no_grad():
             losses = get_loss(
-                latent_state, action, reward, done, latent_next_state, include_reward)
+                mdrnn_mode, latent_state, action, reward,
+                done, latent_next_state, include_reward
+            )
 
         cum_loss += losses['loss'].item()
         cum_gmm += losses['gmm'].item()
@@ -117,8 +119,8 @@ def test(mdrnn, test_loader, device, batch_size, include_reward=False):
     return test_loss
 
 
-def train(mdrnn, train_loader, optimizer, device, batch_size, include_reward=False):
-    mdrnn.train()
+def train(mdrnn_model, vae_model, train_loader, optimizer, device, batch_size, include_reward=False):
+    mdrnn_model.train()
     train_loader.dataset.load_next_buffer()
     cum_loss = 0
     cum_gmm = 0
@@ -128,10 +130,12 @@ def train(mdrnn, train_loader, optimizer, device, batch_size, include_reward=Fal
     for ix, data in enumerate(train_loader):
         state, action, reward, done, next_state = [arr.to(device) for arr in data]
 
-        latent_state, latent_next_state = to_latent(state, next_state)
+        latent_state, latent_next_state = to_latent(vae_model, state, next_state)
 
         losses = get_loss(
-            latent_state, action, reward, done, latent_next_state, include_reward)
+            mdrnn_mode, latent_state, action, reward,
+            done, latent_next_state, include_reward
+        )
 
         optimizer.zero_grad()
         losses['loss'].backward()
@@ -163,10 +167,10 @@ def main(args):
     )
 
     train_loader = torch.utils.data.DataLoader(
-        dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=8
+        dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=2
     )
     test_loader = torch.utils.data.DataLoader(
-        dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=8
+        dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=2
     )
 
     vae_file = join('trained', args.env, 'vae', 'best.tar')
@@ -177,10 +181,10 @@ def main(args):
         f"Loading VAE at epoch {vae_state['epoch']} with test error {vae_state['precision']}"
     )
 
-    vae = vae.MODEL(misc.IMAGE_CHANNELS, misc.LATENT_SIZE).to(device)
-    vae.load_state_dict(vae_state['state_dict'])
+    vae_model = vae.MODEL(misc.IMAGE_CHANNELS, misc.LATENT_SIZE).to(device)
+    vae_model.load_state_dict(vae_state['state_dict'])
 
-    mdrnn = mdrnn.MODEL(misc.LATENT_SIZE, misc.ACTION_SIZE, misc.R_SIZE, 5).to(device)
+    mdrnn_model = mdrnn.MODEL(misc.LATENT_SIZE, misc.ACTION_SIZE, misc.R_SIZE, 5).to(device)
     optimizer = torch.optim.RMSprop(mdrnn.parameters(), lr=1e-3, alpha=.9)
     scheduler = learning.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
     earlystopping = learning.EarlyStopping('min', patience=30)
@@ -195,7 +199,7 @@ def main(args):
         print(
             f"Reloading MDRNN at epoch {rnn_state['epoch']}, with test error {rnn_state['precision']}"
         )
-        mdrnn.load_state_dict(rnn_state['state_dict'])
+        mdrnn_model.load_state_dict(rnn_state['state_dict'])
         optimizer.load_state_dict(rnn_state['optimizer'])
         scheduler.load_state_dict(vae_state['scheduler'])
         earlystopping.load_state_dict(vae_state['earlystopping'])
@@ -205,8 +209,8 @@ def main(args):
         print()
 
         # Training
-        train(mdrnn, train_loader, optimizer, device, args.batch_size, args.include_reward)
-        test_loss = test(mdrnn, test_loader, device, args.batch_size, args.include_reward)
+        train(mdrnn_model, vae_model, train_loader, optimizer, device, args.batch_size, args.include_reward)
+        test_loss = test(mdrnn_model, vae_model, test_loader, device, args.batch_size, args.include_reward)
         scheduler.step(test_loss)
         earlystopping.step(test_loss)
 
@@ -216,7 +220,7 @@ def main(args):
 
             torch.save({
                 'epoch': epoch,
-                'state_dict': mdrnn.state_dict(),
+                'state_dict': mdrnn_model.state_dict(),
                 'precision': test_loss,
                 'optimizer': optimizer.state_dict(),
                 'scheduler': scheduler.state_dict(),
