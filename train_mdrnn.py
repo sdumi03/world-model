@@ -105,7 +105,7 @@ def test(mdrnn_model, vae_model, test_loader, device, batch_size, include_reward
 
         with torch.no_grad():
             losses = get_loss(
-                mdrnn_mode, latent_state, action, reward,
+                mdrnn_model, latent_state, action, reward,
                 done, latent_next_state, include_reward
             )
 
@@ -133,7 +133,7 @@ def train(mdrnn_model, vae_model, train_loader, optimizer, device, batch_size, i
         latent_state, latent_next_state = to_latent(vae_model, state, next_state)
 
         losses = get_loss(
-            mdrnn_mode, latent_state, action, reward,
+            mdrnn_model, latent_state, action, reward,
             done, latent_next_state, include_reward
         )
 
@@ -185,7 +185,7 @@ def main(args):
     vae_model.load_state_dict(vae_state['state_dict'])
 
     mdrnn_model = mdrnn.MODEL(misc.LATENT_SIZE, misc.ACTION_SIZE, misc.R_SIZE, 5).to(device)
-    optimizer = torch.optim.RMSprop(mdrnn.parameters(), lr=1e-3, alpha=.9)
+    optimizer = torch.optim.RMSprop(mdrnn_model.parameters(), lr=1e-3, alpha=.9)
     scheduler = learning.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
     earlystopping = learning.EarlyStopping('min', patience=30)
 
