@@ -11,10 +11,13 @@ class Decoder(torch.nn.Module):
         self.fc1 = torch.nn.Linear(latent_size, 1024)
 
         if dimension == '1d':
-            self.deconv1 = torch.nn.ConvTranspose1d(1024, 128, 5, stride=2)
-            self.deconv2 = torch.nn.ConvTranspose1d(128, 64, 5, stride=2)
-            self.deconv3 = torch.nn.ConvTranspose1d(64, 32, 6, stride=2)
-            self.deconv4 = torch.nn.ConvTranspose1d(32, img_channels, 6, stride=2)
+            # self.deconv1 = torch.nn.ConvTranspose1d(1024, 128, 5, stride=2)
+            self.deconv1 = torch.nn.ConvTranspose1d(1024, 128, 2, stride=1)
+            # self.deconv2 = torch.nn.ConvTranspose1d(128, 64, 5, stride=2)
+            self.deconv2 = torch.nn.ConvTranspose1d(128, 64, 2, stride=1)
+            # self.deconv3 = torch.nn.ConvTranspose1d(64, 32, 6, stride=2)
+            self.deconv3 = torch.nn.ConvTranspose1d(64, img_channels, 2, stride=1)
+            # self.deconv4 = torch.nn.ConvTranspose1d(32, img_channels, 6, stride=2)
 
         elif dimension == '2d':
             self.deconv1 = torch.nn.ConvTranspose2d(1024, 128, 5, stride=2)
@@ -30,8 +33,10 @@ class Decoder(torch.nn.Module):
 
         x = torch.nn.functional.relu(self.deconv1(x))
         x = torch.nn.functional.relu(self.deconv2(x))
-        x = torch.nn.functional.relu(self.deconv3(x))
-        reconstruction = torch.nn.functional.sigmoid(self.deconv4(x))
+        # x = torch.nn.functional.relu(self.deconv3(x))
+        # reconstruction = torch.nn.functional.sigmoid(self.deconv4(x))
+        reconstruction = torch.nn.functional.sigmoid(self.deconv3(x))
+        print(reconstruction.shape)
         return reconstruction
 
 
