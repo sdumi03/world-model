@@ -162,9 +162,10 @@ class Env:
         self.done = False
         self.reward = 0
 
-        f = np.random.randint(len(self.files), size=1)[0]
+        # f = np.random.randint(len(self.files), size=1)[0]
 
-        data = pd.read_csv(self.path + self.files[f].replace('=X', ''))
+        # data = pd.read_csv(self.path + self.files[f].replace('=X', ''))
+        data = pd.read_csv(self.path + self.files.replace('=X', ''))
         data = data.drop(columns=['Unnamed: 0', '4', '5'])
         data = data.rename(columns={'0': 'open', '1': 'high', '2': 'low', '3': 'close'})
 
