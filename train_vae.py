@@ -39,7 +39,6 @@ def train(model, train_loader, optimizer, device):
 
     for data in train_loader:
         data = data.float().to(device)
-        print(data[0][0])
 
         optimizer.zero_grad()
         recon_batch, mu, logvar = model(data)
@@ -144,9 +143,9 @@ def main(args):
                         join(vae_dir, 'samples', f"sample_{epoch}_{i}.png")
                     )
 
-        if earlystopping.stop:
-            print(f"End of Training because of early stopping at epoch {epoch}")
-            break
+        # if earlystopping.stop:
+        #     print(f"End of Training because of early stopping at epoch {epoch}")
+        #     break
 
 
 if __name__ == '__main__':
