@@ -48,7 +48,7 @@ class Encoder(torch.nn.Module):
             # self.conv3 = torch.nn.Conv1d(64, 128, 4, stride=2)
             self.conv3 = torch.nn.Conv1d(64, 128, 2, stride=1)
             # self.conv4 = torch.nn.Conv1d(128, 256, 4, stride=2)
-            self.conv4 = torch.nn.Conv1d(128, 256, 2, stride=1)
+            # self.conv4 = torch.nn.Conv1d(128, 256, 2, stride=1)
 
         elif dimension == '2d':
             self.conv1 = torch.nn.Conv2d(img_channels, 32, 4, stride=2)
@@ -63,7 +63,7 @@ class Encoder(torch.nn.Module):
         x = torch.nn.functional.relu(self.conv1(x))
         x = torch.nn.functional.relu(self.conv2(x))
         x = torch.nn.functional.relu(self.conv3(x))
-        x = torch.nn.functional.relu(self.conv4(x))
+        # x = torch.nn.functional.relu(self.conv4(x))
 
         x = x.view(x.size(0), -1)
 
