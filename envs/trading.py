@@ -51,6 +51,7 @@ class Env:
 
             'CHFJPY=X'
         ]
+        self.files = 'EURUSD=X'
 
         # define width of candlestick elements
         self.width_candle = 1.0
