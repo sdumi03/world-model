@@ -38,7 +38,7 @@ def train(model, train_loader, optimizer, device):
     train_loss = 0
 
     for data in train_loader:
-        data = data.to(device)
+        data = data.float().to(device)
         print('data.shape', data.shape)
 
         optimizer.zero_grad()
