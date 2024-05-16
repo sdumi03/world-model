@@ -56,8 +56,8 @@ class Encoder(torch.nn.Module):
             self.conv3 = torch.nn.Conv2d(64, 128, 4, stride=2)
             self.conv4 = torch.nn.Conv2d(128, 256, 4, stride=2)
 
-        self.fc_mu = torch.nn.Linear(2*2*256, latent_size)
-        self.fc_logsigma = torch.nn.Linear(2*2*256, latent_size)
+        self.fc_mu = torch.nn.Linear(256, latent_size)
+        self.fc_logsigma = torch.nn.Linear(256, latent_size)
 
     def forward(self, x):
         x = torch.nn.functional.relu(self.conv1(x))
