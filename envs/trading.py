@@ -178,10 +178,11 @@ class Env:
 
         self.next_state = self.history[0 : self.current_index]
         # self.insert_more_data_into_next_state() # Does not required
-        self.data_to_figure_to_image()
+        # self.data_to_figure_to_image()
 
         # return self.next_state
-        return self.img_array
+        # return self.img_array
+        return self.next_state.to_numpy()
 
 
     def insert_more_data_into_next_state(self) -> None:
@@ -208,7 +209,7 @@ class Env:
         # Get next_state and transform to image
         self.next_state = self.history[self.current_index - self.seq_len : self.current_index]
         # self.insert_more_data_into_next_state() # Does not required
-        self.data_to_figure_to_image()
+        # self.data_to_figure_to_image()
 
 
     def step(self, action):
@@ -240,4 +241,5 @@ class Env:
 
         self.reward = self.variation
 
-        return self.img_array, self.reward, self.done, False, {}
+        # return self.img_array, self.reward, self.done, False, {}
+        return self.next_state.to_numpy(), self.reward, self.done, False, {}
