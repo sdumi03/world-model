@@ -73,10 +73,10 @@ def main(args):
     assert exists(rollouts_path), 'Rollouts does not exists'
 
     dataset_train = loaders.RolloutObservationDataset(
-        rollouts_path, transform_train, train=True
+        rollouts_path, transform_train, args.dimension, train=True
     )
     dataset_test = loaders.RolloutObservationDataset(
-        rollouts_path, transform_test, train=False
+        rollouts_path, transform_test, args.dimension, train=False
     )
 
     train_loader = torch.utils.data.DataLoader(

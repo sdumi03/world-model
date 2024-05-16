@@ -7,8 +7,9 @@ import numpy as np
 
 
 class _RolloutDataset(torch.utils.data.Dataset):
-    def __init__(self, root, transform, buffer_size=200, train=True):
+    def __init__(self, root, transform, dimension, buffer_size=200, train=True):
         self._transform = transform
+        self._dimension = dimension
 
         self._files = [
             join(root, sub_dir, sub_sub_dir)
@@ -28,9 +29,7 @@ class _RolloutDataset(torch.utils.data.Dataset):
 
     def load_next_buffer(self):
         self._buffer_files_names = self._files[self._buffer_index : self._buffer_index + self._buffer_size]
-
         self._buffer_index += self._buffer_size
-
         self._buffer_index = self._buffer_index % len(self._files)
         self._buffer = []
         self._cum_size = [0]
@@ -146,7 +145,9 @@ class RolloutObservationDataset(_RolloutDataset):
     """
 
     def _get_data(self, data, seq_index):
-        return self._transform(data['states'][seq_index])
+        print(data.shape)
+        if self._dimension == '1d': return data['states'][seq_index]
+        elif self._dimension == '2d': return self._transform(data['states'][seq_index])
 
     def _data_per_sequence(self, data_length):
         return data_length
