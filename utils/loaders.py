@@ -145,7 +145,7 @@ class RolloutObservationDataset(_RolloutDataset):
     """
 
     def _get_data(self, data, seq_index):
-        print(data.shape)
+        print(np.array(data).shape)
         if self._dimension == '1d': return data['states'][seq_index]
         elif self._dimension == '2d': return self._transform(data['states'][seq_index])
 
