@@ -23,7 +23,7 @@ def test(model, test_loader, device):
 
     with torch.no_grad():
         for data in test_loader:
-            data = data.to(device)
+            data = data.float().to(device)
             recon_batch, mu, logvar = model(data)
             test_loss += vae_loss_function(recon_batch, data, mu, logvar).item()
 

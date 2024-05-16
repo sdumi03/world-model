@@ -36,7 +36,6 @@ class Decoder(torch.nn.Module):
         # x = torch.nn.functional.relu(self.deconv3(x))
         # reconstruction = torch.nn.functional.sigmoid(self.deconv4(x))
         reconstruction = torch.nn.functional.sigmoid(self.deconv3(x))
-        print(reconstruction.shape)
         return reconstruction
 
 
