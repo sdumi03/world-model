@@ -86,7 +86,7 @@ def main(args):
         dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=2
     )
 
-    model = vae.MODEL(misc.IMAGE_CHANNELS, misc.LATENT_SIZE).to(device)
+    model = vae.MODEL(misc.IMAGE_CHANNELS, misc.LATENT_SIZE, args.dimension).to(device)
     optimizer = torch.optim.Adam(model.parameters())
     scheduler = learning.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
     earlystopping = learning.EarlyStopping('min', patience=30)
@@ -164,6 +164,9 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--nosamples', action='store_true', help='Does not save samples during training if specified'
+    )
+    parser.add_argument(
+        '--dimension', type=str, default='1d', help='Dimension of the VAE model (1d or 2d)'
     )
     args = parser.parse_args()
 
