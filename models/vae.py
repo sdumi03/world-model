@@ -41,10 +41,14 @@ class Encoder(torch.nn.Module):
         self.img_channels = img_channels
 
         if dimension == '1d':
-            self.conv1 = torch.nn.Conv1d(img_channels, 32, 4, stride=2)
-            self.conv2 = torch.nn.Conv1d(32, 64, 4, stride=2)
-            self.conv3 = torch.nn.Conv1d(64, 128, 4, stride=2)
-            self.conv4 = torch.nn.Conv1d(128, 256, 4, stride=2)
+            # self.conv1 = torch.nn.Conv1d(img_channels, 32, 4, stride=2)
+            self.conv1 = torch.nn.Conv1d(img_channels, 32, 2, stride=1)
+            # self.conv2 = torch.nn.Conv1d(32, 64, 4, stride=2)
+            self.conv2 = torch.nn.Conv1d(32, 64, 2, stride=1)
+            # self.conv3 = torch.nn.Conv1d(64, 128, 4, stride=2)
+            self.conv3 = torch.nn.Conv1d(64, 128, 2, stride=1)
+            # self.conv4 = torch.nn.Conv1d(128, 256, 4, stride=2)
+            self.conv4 = torch.nn.Conv1d(128, 256, 2, stride=1)
 
         elif dimension == '2d':
             self.conv1 = torch.nn.Conv2d(img_channels, 32, 4, stride=2)
