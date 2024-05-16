@@ -39,6 +39,7 @@ def train(model, train_loader, optimizer, device):
 
     for data in train_loader:
         data = data.to(device)
+        print('data.shape', data.shape)
 
         optimizer.zero_grad()
         recon_batch, mu, logvar = model(data)
