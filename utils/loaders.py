@@ -66,9 +66,10 @@ class _RolloutDataset(torch.utils.data.Dataset):
         print(file_index)
         seq_index = i - self._cum_size[file_index]
         print(seq_index)
+        # carga los 25 rollouts (mitad de los 50 rollouts generados)
         data = self._buffer[file_index]
-        print(self._buffer, np.array(self._buffer).shape)
-        print(data)
+        # print(self._buffer, np.array(self._buffer).shape)
+        # print(data)
         print('return getitem')
         return self._get_data(data, seq_index)
 
@@ -150,7 +151,10 @@ class RolloutObservationDataset(_RolloutDataset):
     """
 
     def _get_data(self, data, seq_index):
-        print(np.array(data).shape)
+        print(np.array(data['states']).shape, np.array(data['states'][seq_index]).shape)
+        from time import sleep
+        sleep(20)
+
         if self._dimension == '1d': return data['states'][seq_index]
         elif self._dimension == '2d': return self._transform(data['states'][seq_index])
 
