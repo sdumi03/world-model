@@ -65,7 +65,9 @@ class Encoder(torch.nn.Module):
         x = torch.nn.functional.relu(self.conv3(x))
         # x = torch.nn.functional.relu(self.conv4(x))
 
+        print(x.shape)
         x = x.view(x.size(0), -1)
+        print(x.shape)
 
         mu = self.fc_mu(x)
         logsigma = self.fc_logsigma(x)
