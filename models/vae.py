@@ -6,6 +6,7 @@ class Decoder(torch.nn.Module):
         super().__init__()
         self.latent_size = latent_size
         self.img_channels = img_channels
+        self.dimension = dimension
 
         self.fc1 = torch.nn.Linear(latent_size, 1024)
 
@@ -24,8 +25,8 @@ class Decoder(torch.nn.Module):
     def forward(self, x):
         x = torch.nn.functional.relu(self.fc1(x))
 
-        if dimension == '1d': x = x.unsqueeze(-1)
-        elif dimension == '2d': x = x.unsqueeze(-1).unsqueeze(-1)
+        if self.dimension == '1d': x = x.unsqueeze(-1)
+        elif self.dimension == '2d': x = x.unsqueeze(-1).unsqueeze(-1)
 
         x = torch.nn.functional.relu(self.deconv1(x))
         x = torch.nn.functional.relu(self.deconv2(x))
@@ -65,9 +66,7 @@ class Encoder(torch.nn.Module):
         x = torch.nn.functional.relu(self.conv3(x))
         # x = torch.nn.functional.relu(self.conv4(x))
 
-        print(x.shape)
         x = x.view(x.size(0), -1)
-        print(x.shape)
 
         mu = self.fc_mu(x)
         logsigma = self.fc_logsigma(x)
