@@ -84,9 +84,11 @@ class MODEL(torch.nn.Module):
 
     def forward(self, x):
         mu, logsigma = self.encoder(x)
+
         sigma = logsigma.exp()
         eps = torch.randn_like(sigma)
         z = eps.mul(sigma).add_(mu)
 
         recon_x = self.decoder(z)
+
         return recon_x, mu, logsigma
