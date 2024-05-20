@@ -4,4 +4,4 @@ R_SIZE = 256
 RED_SIZE = 64
 SIZE = 64
 IMAGE_CHANNELS = 30 # 3
-SEQ_LEN = 5 # 1  # 32
+SEQ_LEN = 4 # 1  # 32

@@ -10,7 +10,7 @@ from models import vae, mdrnn
 from utils import misc, learning, loaders
 
 
-def to_latent(vae_model, state, next_state):
+def to_latent(vae_model, state, next_state, dimension):
     """ Transform observations to latent space.
 
     :args state: 5D torch tensor (BSIZE, SEQ_LEN, ASIZE, SIZE, SIZE)
@@ -21,37 +21,53 @@ def to_latent(vae_model, state, next_state):
         - latent_next_state: 4D torch tensor (BSIZE, SEQ_LEN, LSIZE)
     """
     with torch.no_grad():
-        xxx = state.shape[-1]
-        state, next_state = [
-            torch.nn.functional.upsample(
-                x.view(-1, 3, xxx, xxx),
-                size=misc.RED_SIZE,
-                mode='bilinear',
-                align_corners=True
-            )
-            for x in (state, next_state)
-        ]
+        if dimension == '1d':
+            state, next_state = [
+                x.view(-1, x.size(-2), x.size(-1))
+                for x in (state, next_state)
+            ]
+
+        if dimension == '2d':
+            img_size = state.shape[-1]
+            state, next_state = [
+                torch.nn.functional.upsample(
+                    x.view(-1, 3, img_size, img_size),
+                    size=misc.RED_SIZE,
+                    mode='bilinear',
+                    align_corners=True
+                )
+                for x in (state, next_state)
+            ]
 
         (state_mu, state_logsigma), (next_state_mu, next_state_logsigma) = [
             vae_model(x)[1:]
             for x in (state, next_state)
         ]
 
-        state_mu = state_mu.unsqueeze(1)
-        state_logsigma = state_logsigma.unsqueeze(1)
-        next_state_mu = next_state_mu.unsqueeze(1)
-        next_state_logsigma = next_state_logsigma.unsqueeze(1)
+        if dimension == '1d':
+            latent_state, latent_next_state = [
+                (x_mu + x_logsigma.exp() * torch.randn_like(x_mu))
+                for x_mu, x_logsigma in
+                [(state_mu, state_logsigma), (next_state_mu, next_state_logsigma)]
+            ]
 
-        xxx = state_logsigma.shape[0]
-        latent_state, latent_next_state = [
-            (x_mu + x_logsigma.exp() * torch.randn_like(x_mu)).view(xxx, misc.SEQ_LEN, misc.LATENT_SIZE)
-            for x_mu, x_logsigma in
-            [(state_mu, state_logsigma), (next_state_mu, next_state_logsigma)]]
+        if dimension == '2d':
+            state_mu = state_mu.unsqueeze(1)
+            state_logsigma = state_logsigma.unsqueeze(1)
+            next_state_mu = next_state_mu.unsqueeze(1)
+            next_state_logsigma = next_state_logsigma.unsqueeze(1)
+            bs = state_logsigma.shape[0]
+
+            latent_state, latent_next_state = [
+                (x_mu + x_logsigma.exp() * torch.randn_like(x_mu)).view(bs, misc.SEQ_LEN, misc.LATENT_SIZE)
+                for x_mu, x_logsigma in
+                [(state_mu, state_logsigma), (next_state_mu, next_state_logsigma)]
+            ]
 
     return latent_state, latent_next_state
 
 
-def get_loss(mdrnn_model, latent_state, action, reward, done, latent_next_state, include_reward: bool):
+def get_loss(mdrnn_model, latent_state, action, reward, done, latent_next_state, include_reward, dimension):
     """ Compute losses.
 
     The loss that is computed is:
@@ -69,11 +85,17 @@ def get_loss(mdrnn_model, latent_state, action, reward, done, latent_next_state,
     :returns: dictionary of losses, containing the gmm, the mse, the bce and
         the averaged loss.
     """
-    latent_state, action, reward, done, latent_next_state = \
-        [
-            arr.transpose(1, 0)
-            for arr in [latent_state, action, reward, done, latent_next_state]
-        ]
+    if dimension == '1d':
+        action = action.view(-1)
+        reward = reward.view(-1)
+        done = done.view(-1)
+
+    if dimension == '2d':
+        latent_state, action, reward, done, latent_next_state = \
+            [
+                arr.transpose(1, 0)
+                for arr in [latent_state, action, reward, done, latent_next_state]
+            ]
 
     mus, sigmas, logpi, rewards, dones = mdrnn_model(action, latent_state)
     gmm = mdrnn.gmm_loss(latent_next_state, mus, sigmas, logpi)
@@ -90,7 +112,7 @@ def get_loss(mdrnn_model, latent_state, action, reward, done, latent_next_state,
     return dict(gmm=gmm, bce=bce, mse=mse, loss=loss)
 
 
-def test(mdrnn_model, vae_model, test_loader, device, batch_size, include_reward=False):
+def test(mdrnn_model, vae_model, test_loader, device, batch_size, include_reward, dimension):
     mdrnn_model.eval()
     test_loader.dataset.load_next_buffer()
     cum_loss = 0
@@ -101,12 +123,12 @@ def test(mdrnn_model, vae_model, test_loader, device, batch_size, include_reward
     for ix, data in enumerate(test_loader):
         state, action, reward, done, next_state = [arr.to(device) for arr in data]
 
-        latent_state, latent_next_state = to_latent(vae_model, state, next_state)
+        latent_state, latent_next_state = to_latent(vae_model, state, next_state, dimension)
 
         with torch.no_grad():
             losses = get_loss(
                 mdrnn_model, latent_state, action, reward,
-                done, latent_next_state, include_reward
+                done, latent_next_state, include_reward, dimension
             )
 
         cum_loss += losses['loss'].item()
@@ -119,7 +141,7 @@ def test(mdrnn_model, vae_model, test_loader, device, batch_size, include_reward
     return test_loss
 
 
-def train(mdrnn_model, vae_model, train_loader, optimizer, device, batch_size, include_reward=False):
+def train(mdrnn_model, vae_model, train_loader, optimizer, device, batch_size, include_reward, dimension):
     mdrnn_model.train()
     train_loader.dataset.load_next_buffer()
     cum_loss = 0
@@ -130,11 +152,11 @@ def train(mdrnn_model, vae_model, train_loader, optimizer, device, batch_size, i
     for ix, data in enumerate(train_loader):
         state, action, reward, done, next_state = [arr.to(device) for arr in data]
 
-        latent_state, latent_next_state = to_latent(vae_model, state, next_state)
+        latent_state, latent_next_state = to_latent(vae_model, state, next_state, dimension)
 
         losses = get_loss(
             mdrnn_model, latent_state, action, reward,
-            done, latent_next_state, include_reward
+            done, latent_next_state, include_reward, dimension
         )
 
         optimizer.zero_grad()
@@ -181,10 +203,10 @@ def main(args):
         f"Loading VAE at epoch {vae_state['epoch']} with test error {vae_state['precision']}"
     )
 
-    vae_model = vae.MODEL(misc.IMAGE_CHANNELS, misc.LATENT_SIZE, args.dimension).to(device)
+    vae_model = vae.MODEL(misc.IMAGE_CHANNELS * self.SEQ_LEN, misc.LATENT_SIZE, args.dimension).to(device)
     vae_model.load_state_dict(vae_state['state_dict'])
 
-    mdrnn_model = mdrnn.MODEL(misc.LATENT_SIZE, misc.ACTION_SIZE, misc.R_SIZE, 5).to(device)
+    mdrnn_model = mdrnn.MODEL(misc.LATENT_SIZE, misc.ACTION_SIZE, misc.R_SIZE, 5, args.dimension).to(device)
     optimizer = torch.optim.RMSprop(mdrnn_model.parameters(), lr=1e-3, alpha=.9)
     scheduler = learning.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
     earlystopping = learning.EarlyStopping('min', patience=30)
@@ -210,8 +232,8 @@ def main(args):
         print('Epoch:', epoch)
 
         # Training
-        train(mdrnn_model, vae_model, train_loader, optimizer, device, args.batch_size, args.include_reward)
-        test_loss = test(mdrnn_model, vae_model, test_loader, device, args.batch_size, args.include_reward)
+        train(mdrnn_model, vae_model, train_loader, optimizer, device, args.batch_size, args.include_reward, args.dimension)
+        test_loss = test(mdrnn_model, vae_model, test_loader, device, args.batch_size, args.include_reward, args.dimension)
         scheduler.step(test_loss)
         earlystopping.step(test_loss)
 

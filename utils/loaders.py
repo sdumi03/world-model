@@ -62,14 +62,9 @@ class _RolloutDataset(torch.utils.data.Dataset):
     def __getitem__(self, i):
         # binary search through cum_size
         file_index = bisect(self._cum_size, i) - 1
-        # print(file_index)
         seq_index = i - self._cum_size[file_index]
-        # print(seq_index)
         # carga los 25 rollouts (mitad de los 50 rollouts generados)
         data = self._buffer[file_index]
-        # print(self._buffer, np.array(self._buffer).shape)
-        # print(data)
-        # print('return getitem')
         return self._get_data(data, seq_index)
 
     def _get_data(self, data, seq_index):

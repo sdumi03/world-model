@@ -25,6 +25,7 @@ def gmm_loss(batch, mus, sigmas, logpi, reduce=True):
     with fs).
     """
     batch = batch.unsqueeze(-2)
+
     normal_dist = torch.distributions.normal.Normal(mus, sigmas)
     g_log_probs = normal_dist.log_prob(batch)
     g_log_probs = logpi + torch.sum(g_log_probs, dim=-1)
@@ -35,6 +36,7 @@ def gmm_loss(batch, mus, sigmas, logpi, reduce=True):
     probs = torch.sum(g_probs, dim=-1)
 
     log_prob = max_log_probs.squeeze() + torch.log(probs)
+
     if reduce: return - torch.mean(log_prob)
     return - log_prob
 
@@ -57,9 +59,10 @@ class _MDRNNBase(torch.nn.Module):
 
 class MODEL(_MDRNNBase):
     """ MDRNN model for multi steps forward """
-    def __init__(self, latents, actions, hiddens, gaussians):
+    def __init__(self, latents, actions, hiddens, gaussians, dimension):
         super().__init__(latents, actions, hiddens, gaussians)
         self.rnn = torch.nn.LSTM(latents + actions, hiddens)
+        self.dimension = dimension
 
     def forward(self, actions, latents): # pylint: disable=arguments-differ
         """ MULTI STEPS forward.
@@ -76,7 +79,9 @@ class MODEL(_MDRNNBase):
             - rs: (SEQ_LEN, BSIZE) torch tensor
             - ds: (SEQ_LEN, BSIZE) torch tensor
         """
-        seq_len, bs = actions.size(0), actions.size(1)
+        if self.dimension == '1d': bs = actions.size(0)
+        if self.dimension == '2d': seq_len, bs = actions.size(0), actions.size(1)
+
         actions = actions.unsqueeze(-1)
 
         ins = torch.cat([actions, latents], dim=-1)
@@ -86,19 +91,35 @@ class MODEL(_MDRNNBase):
 
         stride = self.gaussians * self.latents
 
-        mus = gmm_outs[:, :, :stride]
-        mus = mus.view(seq_len, bs, self.gaussians, self.latents)
+        if self.dimension == '1d':
+            mus = gmm_outs[:, :stride]
+            mus = mus.view(bs, self.gaussians, self.latents)
 
-        sigmas = gmm_outs[:, :, stride:2 * stride]
-        sigmas = sigmas.view(seq_len, bs, self.gaussians, self.latents)
-        sigmas = torch.exp(sigmas)
+            sigmas = gmm_outs[:, stride : 2 * stride]
+            sigmas = sigmas.view(bs, self.gaussians, self.latents)
+            sigmas = torch.exp(sigmas)
 
-        pi = gmm_outs[:, :, 2 * stride: 2 * stride + self.gaussians]
-        pi = pi.view(seq_len, bs, self.gaussians)
-        logpi = torch.nn.functional.log_softmax(pi, dim=-1)
+            pi = gmm_outs[:, 2 * stride : 2 * stride + self.gaussians]
+            pi = pi.view(bs, self.gaussians)
+            logpi = torch.nn.functional.log_softmax(pi, dim=-1)
 
-        rs = gmm_outs[:, :, -2]
-        ds = gmm_outs[:, :, -1]
+            rs = gmm_outs[:, -2]
+            ds = gmm_outs[:, -1]
+
+        if self.dimension == '2d':
+            mus = gmm_outs[:, :, :stride]
+            mus = mus.view(seq_len, bs, self.gaussians, self.latents)
+
+            sigmas = gmm_outs[:, :, stride : 2 * stride]
+            sigmas = sigmas.view(seq_len, bs, self.gaussians, self.latents)
+            sigmas = torch.exp(sigmas)
+
+            pi = gmm_outs[:, :, 2 * stride : 2 * stride + self.gaussians]
+            pi = pi.view(seq_len, bs, self.gaussians)
+            logpi = torch.nn.functional.log_softmax(pi, dim=-1)
+
+            rs = gmm_outs[:, :, -2]
+            ds = gmm_outs[:, :, -1]
 
         return mus, sigmas, logpi, rs, ds
 
