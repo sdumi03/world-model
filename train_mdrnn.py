@@ -160,10 +160,10 @@ def main(args):
     assert exists(rollouts_path), 'Rollouts does not exists'
 
     dataset_train = loaders.RolloutSequenceDataset(
-        rollouts_path, misc.SEQ_LEN, transform, buffer_size=30
+        rollouts_path, misc.SEQ_LEN, transform, args.dimension, buffer_size=30
     )
     dataset_test = loaders.RolloutSequenceDataset(
-        rollouts_path, misc.SEQ_LEN, transform, buffer_size=10, train=False
+        rollouts_path, misc.SEQ_LEN, transform, args.dimension, buffer_size=10, train=False
     )
 
     train_loader = torch.utils.data.DataLoader(
@@ -181,7 +181,7 @@ def main(args):
         f"Loading VAE at epoch {vae_state['epoch']} with test error {vae_state['precision']}"
     )
 
-    vae_model = vae.MODEL(misc.IMAGE_CHANNELS, misc.LATENT_SIZE).to(device)
+    vae_model = vae.MODEL(misc.IMAGE_CHANNELS, misc.LATENT_SIZE, args.dimension).to(device)
     vae_model.load_state_dict(vae_state['state_dict'])
 
     mdrnn_model = mdrnn.MODEL(misc.LATENT_SIZE, misc.ACTION_SIZE, misc.R_SIZE, 5).to(device)
@@ -248,6 +248,9 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--include-reward', action='store_true', help='Add a reward modelisation term to the loss'
+    )
+    parser.add_argument(
+        '--dimension', type=str, default='1d', help='Dimension of the MDRNN model (1d or 2d)'
     )
     args = parser.parse_args()
 
