@@ -182,10 +182,10 @@ def main(args):
     assert exists(rollouts_path), 'Rollouts does not exists'
 
     dataset_train = loaders.RolloutSequenceDataset(
-        rollouts_path, misc.SEQ_LEN, transform, args.dimension, buffer_size=30
+        rollouts_path, misc.SEQ_LEN, transform, args.dimension
     )
     dataset_test = loaders.RolloutSequenceDataset(
-        rollouts_path, misc.SEQ_LEN, transform, args.dimension, buffer_size=10, train=False
+        rollouts_path, misc.SEQ_LEN, transform, args.dimension, train=False
     )
 
     train_loader = torch.utils.data.DataLoader(
@@ -203,7 +203,7 @@ def main(args):
         f"Loading VAE at epoch {vae_state['epoch']} with test error {vae_state['precision']}"
     )
 
-    vae_model = vae.MODEL(misc.IMAGE_CHANNELS * self.SEQ_LEN, misc.LATENT_SIZE, args.dimension).to(device)
+    vae_model = vae.MODEL(misc.IMAGE_CHANNELS, misc.LATENT_SIZE, args.dimension).to(device)
     vae_model.load_state_dict(vae_state['state_dict'])
 
     mdrnn_model = mdrnn.MODEL(misc.LATENT_SIZE, misc.ACTION_SIZE, misc.R_SIZE, 5, args.dimension).to(device)
@@ -250,9 +250,9 @@ def main(args):
                 'earlystopping': earlystopping.state_dict()
             }, rnn_file)
 
-        if earlystopping.stop:
-            print(f"End of Training because of early stopping at epoch {epoch}")
-            break
+        # if earlystopping.stop:
+        #     print(f"End of Training because of early stopping at epoch {epoch}")
+        #     break
 
 
 if __name__ == '__main__':
