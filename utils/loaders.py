@@ -113,6 +113,7 @@ class RolloutSequenceDataset(_RolloutDataset):
         super().__init__(root, transform, dimension, buffer_size, train)
         self._seq_len = seq_len
 
+
     def _get_data(self, data, seq_index):
         obs_data = data['states'][seq_index : seq_index + self._seq_len + 1]
         if self._dimension == '1d': obs_data = obs_data.astype(np.float32)
