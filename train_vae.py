@@ -113,6 +113,7 @@ def main(args):
     current_best = None
     for epoch in range(1, args.epochs + 1):
         print()
+        print('Epoch:', epoch)
 
         # Training
         train(model, train_loader, optimizer, device)
