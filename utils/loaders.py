@@ -51,7 +51,6 @@ class _RolloutDataset(torch.utils.data.Dataset):
             pbar.update(1)
         pbar.close()
 
-
     def __len__(self):
         # to have a full sequence, you need self.seq_len + 1 elements, as
         # you must produce both an seq_len obs and seq_len next_obs sequences
