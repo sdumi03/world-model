@@ -137,11 +137,19 @@ def main(args):
             with torch.no_grad():
                 sample = torch.randn(misc.RED_SIZE, misc.LATENT_SIZE).to(device)
                 sample = model.decoder(sample).cpu()
-                for i in range(len(sample)):
-                    save_image(
-                        sample[i].view(misc.IMAGE_CHANNELS, misc.RED_SIZE, misc.RED_SIZE),
-                        join(vae_dir, 'samples', f"sample_{epoch}_{i}.png")
-                    )
+                if args.dimension == '1d':
+                    for i in range(len(sample)):
+                        torch.save(
+                            sample[i].view(misc.IMAGE_CHANNELS, 4),
+                            join(vae_dir, 'samples', f"sample_{epoch}_{i}.pt")
+                        )
+
+                if args.dimension == '2d':
+                    for i in range(len(sample)):
+                        save_image(
+                            sample[i].view(misc.IMAGE_CHANNELS, misc.RED_SIZE, misc.RED_SIZE),
+                            join(vae_dir, 'samples', f"sample_{epoch}_{i}.png")
+                        )
 
         # if earlystopping.stop:
         #     print(f"End of Training because of early stopping at epoch {epoch}")
