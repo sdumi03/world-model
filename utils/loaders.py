@@ -109,19 +109,22 @@ class RolloutSequenceDataset(_RolloutDataset):
     :args transform: transformation of the observations
     :args train: if True, train data, else test
     """
-    def __init__(self, root, seq_len, transform, buffer_size=200, train=True): # pylint: disable=too-many-arguments
-        super().__init__(root, transform, buffer_size, train)
+    def __init__(self, root, seq_len, transform, dimension, buffer_size=200, train=True): # pylint: disable=too-many-arguments
+        super().__init__(root, transform, dimension, buffer_size, train)
         self._seq_len = seq_len
 
     def _get_data(self, data, seq_index):
         obs_data = data['states'][seq_index : seq_index + self._seq_len + 1]
-        obs_data = self._transform(obs_data.astype(np.float32))
+        if self._dimension == '1d': obs_data = obs_data.astype(np.float32)
+        if self._dimension == '2d': obs_data = self._transform(obs_data.astype(np.float32))
         obs, next_obs = obs_data[:-1], obs_data[1:]
-        action = data['actions'][seq_index + 1 : seq_index + self._seq_len + 1]
-        action = action.astype(np.float32)
-        reward, terminal = [data[key][seq_index + 1 : seq_index + self._seq_len + 1].astype(np.float32)
-                            for key in ('rewards', 'dones')]
-        return obs, action, reward, terminal, next_obs
+
+        action, reward, done = [
+            data[key][seq_index + 1 : seq_index + self._seq_len + 1].astype(np.float32)
+            for key in ('actions', 'rewards', 'dones')
+        ]
+
+        return obs, action, reward, done, next_obs
 
     def _data_per_sequence(self, data_length):
         return data_length - self._seq_len
@@ -151,13 +154,8 @@ class RolloutObservationDataset(_RolloutDataset):
     """
 
     def _get_data(self, data, seq_index):
-        # print(np.array(data['states']).shape, np.array(data['states'][seq_index]).shape)
-        # from time import sleep
-        # sleep(20)
-
         if self._dimension == '1d': return data['states'][seq_index]
-        elif self._dimension == '2d': return self._transform(data['states'][seq_index])
+        if self._dimension == '2d': return self._transform(data['states'][seq_index])
 
     def _data_per_sequence(self, data_length):
         return data_length
-
