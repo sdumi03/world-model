@@ -206,7 +206,7 @@ def main(args):
     vae_model = vae.MODEL(misc.IMAGE_CHANNELS, misc.LATENT_SIZE, args.dimension).to(device)
     vae_model.load_state_dict(vae_state['state_dict'])
 
-    mdrnn_model = mdrnn.MODEL(misc.LATENT_SIZE, misc.ACTION_SIZE, misc.R_SIZE, 5, args.dimension).to(device)
+    mdrnn_model = mdrnn.MODEL(misc.LATENT_SIZE, misc.ACTION_SIZE, misc.RECURRENT_SIZE, 5, args.dimension).to(device)
     optimizer = torch.optim.RMSprop(mdrnn_model.parameters(), lr=1e-3, alpha=.9)
     scheduler = learning.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
     earlystopping = learning.EarlyStopping('min', patience=30)
