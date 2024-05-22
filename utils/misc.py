@@ -131,6 +131,7 @@ class RolloutGenerator:
 
         _, latent_mu, _ = self.vae(obs)
         action = self.controller(latent_mu, hidden[0])
+        action = torch.argmax(action).unsqueeze(0).unsqueeze(0)
         _, _, _, _, _, next_hidden = self.mdrnn(action, latent_mu, hidden)
 
         # print('action', action.squeeze().shape)
