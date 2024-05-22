@@ -8,12 +8,13 @@ from torch.multiprocessing import Process, Queue
 from os import makedirs
 from os.path import join, exists
 from time import sleep
+from tqdm import tqdm
 
 from models import controller
 from utils import misc
 
 
-def evaluate(solutions, results, rollouts=100):
+def evaluate(param_queue, resul_queue, solutions, results, rollouts=100):
     """ Give current controller evaluation.
 
     Evaluation is minus the cumulated reward averaged over rollout runs.
@@ -29,10 +30,11 @@ def evaluate(solutions, results, rollouts=100):
     restimates = []
 
     for s_id in range(rollouts):
-        p_queue.put((s_id, best_guess))
+        param_queue.put((s_id, best_guess))
 
     print("Evaluating...")
-    for _ in tqdm(range(rollouts)):
+    # for _ in tqdm(range(rollouts)):
+    for _ in range(rollouts):
         while resul_queue.empty(): sleep(.1)
 
         restimates.append(resul_queue.get()[1])
@@ -72,7 +74,7 @@ def slave_routine(param_queue, resul_queue, empty_queue, trained_dir, time_limit
             else:
                 s_id, params = param_queue.get()
                 resul_queue.put((s_id, r_gen.rollout(params)))
-                print('finished')
+                # print('finished')
 
 
 def main(args):
@@ -102,7 +104,7 @@ def main(args):
             )
         ).start()
                                                    #misc.R_SIZE
-    controller = controller.MODEL(misc.LATENT_SIZE, misc.RECURRENT_SIZE, misc.ACTION_SIZE)
+    ctrl = controller.MODEL(misc.LATENT_SIZE, misc.RECURRENT_SIZE, misc.ACTION_SIZE)
 
     # define current best and load parameters
     cur_best = None
@@ -110,10 +112,10 @@ def main(args):
     if exists(ctrl_file):
         state = torch.load(ctrl_file, map_location={'cuda': 'cpu'})
         cur_best = - state['reward']
-        controller.load_state_dict(state['state_dict'])
+        ctrl.load_state_dict(state['state_dict'])
         print("Previous best was {}...".format(-cur_best))
 
-    parameters = controller.parameters()
+    parameters = ctrl.parameters()
     evolution_strategy = cma.CMAEvolutionStrategy(
         misc.flatten_parameters(parameters),
         0.1,
@@ -121,10 +123,13 @@ def main(args):
     )
 
     epoch = 0
-    log_step = 3
-    print('BLABLABLA', - cur_best, cur_best, args.target_return)
+    log_step = 4
+    # print('BLABLABLA', - cur_best, cur_best, args.target_return)
 
-    while not evolution_strategy.stop():
+    # while not evolution_strategy.stop():
+    while True:
+        if evolution_strategy.stop(): break
+
         if cur_best is not None and - cur_best > args.target_return:
             print("Already better than target, breaking...")
             break
@@ -153,19 +158,20 @@ def main(args):
         evolution_strategy.disp()
 
         # evaluation and saving
-        if epoch % log_step == log_step - 1:
-            best_params, best, std_best = evaluate(solutions, r_list)
+        # if epoch % log_step == log_step - 1:
+        if epoch % log_step == 0:
+            best_params, best, std_best = evaluate(param_queue, resul_queue, solutions, result_list)
 
-            print("Current evaluation: {}".format(best))
+            print(f"Current evaluation: {best}")
 
             if not cur_best or cur_best > best:
                 cur_best = best
                 print("Saving new best with value {}+-{}...".format(-cur_best, std_best))
-                misc.load_parameters(best_params, controller)
+                misc.load_parameters(best_params, ctrl)
                 torch.save({
                     'epoch': epoch,
                     'reward': - cur_best,
-                    'state_dict': controller.state_dict()
+                    'state_dict': ctrl.state_dict()
                     }, join(ctrl_dir, 'best.tar'))
 
             if - best > args.target_return:
@@ -175,8 +181,8 @@ def main(args):
         epoch += 1
         print()
 
-    es.result_pretty()
-    e_queue.put('EOP')
+    evolution_strategy.result_pretty()
+    empty_queue.put('EOP')
 
 
 if __name__ == '__main__':

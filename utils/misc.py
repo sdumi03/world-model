@@ -7,6 +7,13 @@ IMAGE_CHANNELS = 30 # 3
 SEQ_LEN = 4 # 1  # 32
 
 
+import torch
+import numpy as np
+from models import vae, mdrnn, controller
+from envs import trading
+from os.path import join, exists
+
+
 def flatten_parameters(params):
     """ Flattening parameters.
 
@@ -67,11 +74,6 @@ class RolloutGenerator:
     """
     def __init__(self, trained_dir, device, time_limit):
         """ Build vae, rnn, controller and environment. """
-        import torch
-        from models import vae, mdrnn, controller
-        from envs import trading
-        from os.path import exists
-
         vae_file, rnn_file, ctrl_file = [
             join(trained_dir, model, 'best.tar')
             for model in ['vae', 'mdrnn', 'controller']
@@ -84,10 +86,10 @@ class RolloutGenerator:
             for file_name in (vae_file, rnn_file)
         ]
 
-        for model, state in (('VAE', vae_state), ('MDRNN', rnn_state)):
-            print(f"Loading {model} at epoch {state['epoch']} with test loss {state['precision']}")
+        # for model, state in (('VAE', vae_state), ('MDRNN', rnn_state)):
+        #     print(f"Loading {model} at epoch {state['epoch']} with test loss {state['precision']}")
 
-        self.vae = vae.MODEL(3, LATENT_SIZE).to(device)
+        self.vae = vae.MODEL(IMAGE_CHANNELS, LATENT_SIZE, '1d').to(device)
         self.vae.load_state_dict(vae_state['state_dict'])
 
         self.mdrnn = mdrnn.MDRNNCell(LATENT_SIZE, ACTION_SIZE, RECURRENT_SIZE, 5).to(device)
@@ -123,7 +125,9 @@ class RolloutGenerator:
             - next_hidden (1 x 256) torch tensor
         """
         # print('obs', obs.shape)
+        # import numpy as np
         # print('hidden', np.array(hidden).shape)
+        obs = torch.tensor(obs).float().unsqueeze(0)
 
         _, latent_mu, _ = self.vae(obs)
         action = self.controller(latent_mu, hidden[0])

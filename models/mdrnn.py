@@ -61,7 +61,8 @@ class MODEL(_MDRNNBase):
     """ MDRNN model for multi steps forward """
     def __init__(self, latents, actions, hiddens, gaussians, dimension):
         super().__init__(latents, actions, hiddens, gaussians)
-        self.rnn = torch.nn.LSTM(latents + actions, hiddens)
+        # self.rnn = torch.nn.LSTM(latents + actions, hiddens)
+        self.rnn = torch.nn.LSTM(latents + 1, hiddens)
         self.dimension = dimension
 
     def forward(self, actions, latents): # pylint: disable=arguments-differ
@@ -128,7 +129,8 @@ class MDRNNCell(_MDRNNBase):
     """ MDRNN model for one step forward """
     def __init__(self, latents, actions, hiddens, gaussians):
         super().__init__(latents, actions, hiddens, gaussians)
-        self.rnn = torch.nn.LSTMCell(latents + actions, hiddens)
+        # self.rnn = torch.nn.LSTMCell(latents + actions, hiddens)
+        self.rnn = torch.nn.LSTMCell(latents + 1, hiddens)
 
     def forward(self, action, latent, hidden): # pylint: disable=arguments-differ
         """ ONE STEP forward.
